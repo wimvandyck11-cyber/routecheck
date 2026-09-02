@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the route check works</title>
+<!-- Wat WhatsApp toont bij de link: een kaartje met een titel in plaats van kale tekst. -->
+<meta property="og:title" content="How the route check works — Roots &amp; Roads Africa">
+<meta property="og:description" content="Two minutes. What the link does, what to change, and how it comes back to us.">
+<meta property="og:type" content="website">
+<meta name="description" content="Two minutes. What the link does, what to change, and how it comes back to us.">
+
+<!-- DE HANDLEIDING BIJ HET NAKIJKSCHERM.
+
+     Staat naast index.html in dezelfde publieke map, dus op
+     https://wimvandyck11-cyber.github.io/routecheck/help.html — één vaste link die niet
+     verloopt en die vanuit het nakijkscherm zelf bereikbaar is. Zo is er één bron:
+     wie de handleiding kwijt is, vindt ze terug via het scherm.
+
+     Bewust geen schermafbeeldingen: die verouderen zodra het scherm verandert en dan
+     klopt de uitleg niet meer. Wat hier staat beschrijft handelingen, geen knopposities.
+
+     Huisstijl gelijk aan chauffeur.html, zodat het één geheel is. -->
+
+<style>
+  :root{
+    --ground:#F4ECDC; --surface:#FBF6EA; --surface-2:#EBDFC7;
+    --ink:#2A241C; --ink-soft:#5C5240; --ink-faint:#7A6E58;
+    --line:rgba(42,36,28,.18); --line-soft:rgba(42,36,28,.10);
+    --go:#4B5738; --go-ink:#3A4429; --go-ground:#F2F5EC;
+    --clay:#C1512B; --clay-ink:#9C3F20; --clay-ground:#F9EDE6;
+    --display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --body:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ground:#1B1811; --surface:#241F17; --surface-2:#2C2619;
+      --ink:#F1E8D6; --ink-soft:#B9AC93; --ink-faint:#8F836D;
+      --line:rgba(241,232,214,.16); --line-soft:rgba(241,232,214,.09);
+      --go:#93A76F; --go-ink:#A8BC84; --go-ground:#2A3021;
+      --clay:#E0714A; --clay-ink:#EC8B67; --clay-ground:#33231B;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:17px;
+    line-height:1.6;margin:0;padding:22px 18px 56px;-webkit-text-size-adjust:100%;}
+  .wrap{max-width:560px;margin:0 auto;}
+
+  header{margin-bottom:26px;}
+  header h1{font-family:var(--display);font-size:29px;line-height:1.12;font-weight:600;
+    margin:0 0 8px;}
+  header .sub{color:var(--ink-soft);margin:0;font-size:16px;}
+
+  .stap{background:var(--surface);border:1px solid var(--line);border-radius:6px;
+    padding:16px 18px 18px;margin-bottom:12px;display:flex;gap:15px;align-items:flex-start;}
+  .nr{flex:0 0 auto;width:32px;height:32px;border-radius:50%;background:var(--clay);
+    color:#FBF6EA;font-family:var(--display);font-size:18px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;margin-top:1px;}
+  .stap .tekst{flex:1;min-width:0;}
+  .stap h2{font-family:var(--display);font-size:20px;font-weight:600;line-height:1.2;
+    margin:0 0 5px;}
+  .stap p{margin:0;color:var(--ink-soft);}
+  .stap p + p{margin-top:8px;}
+  .stap b{color:var(--ink);}
+
+  /* De knoppen zoals ze op het nakijkscherm staan, zodat kk ze herkent aan hun vorm en
+     niet aan een omschrijving. Zelfde maat en rand als daar. */
+  .knop{display:inline-flex;align-items:center;justify-content:center;
+    min-width:30px;height:30px;padding:0 6px;margin:0 1px;vertical-align:-8px;
+    background:var(--surface);border:1px solid var(--line);border-radius:5px;
+    font-size:15px;line-height:1;color:var(--ink);}
+  .doe{margin:10px 0 0;display:flex;gap:11px;align-items:flex-start;}
+  .doe .wat{flex:0 0 auto;padding-top:3px;white-space:nowrap;}
+  .doe .uitleg{flex:1;min-width:0;color:var(--ink-soft);}
+
+  .rust{background:var(--go-ground);border:1px solid var(--line-soft);border-radius:6px;
+    padding:16px 18px;margin-top:26px;}
+  .rust h2{font-family:var(--display);font-size:19px;font-weight:600;margin:0 0 10px;
+    color:var(--go-ink);}
+  .rust ul{margin:0;padding-left:19px;}
+  .rust li{color:var(--ink-soft);margin-bottom:7px;}
+  .rust li:last-child{margin-bottom:0;}
+  .rust li b{color:var(--ink);}
+
+  .slot{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
+    color:var(--ink-soft);font-size:16px;}
+  .slot b{color:var(--ink);}
+  footer{margin-top:30px;color:var(--ink-faint);font-size:14px;text-align:center;
+    font-family:var(--display);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>How the route check works</h1>
+    <p class="sub">Before every trip we send you the route to look over. It takes about two
+    minutes, and you do it on your phone.</p>
+  </header>
+
+  <div class="stap">
+    <div class="nr">1</div>
+    <div class="tekst">
+      <h2>Open the link</h2>
+      <p>We send you a short link on WhatsApp. Tap it and the route opens in your phone.</p>
+      <p><b>No app to install, no account, no password.</b></p>
+    </div>
+  </div>
+
+  <div class="stap">
+    <div class="nr">2</div>
+    <div class="tekst">
+      <h2>Read the route</h2>
+      <p>You see the trip day by day: where the guests sleep, what they do, and in which
+      order the days come.</p>
+    </div>
+  </div>
+
+  <div class="stap">
+    <div class="nr">3</div>
+    <div class="tekst">
+      <h2>Change what is wrong</h2>
+      <p>Every day has its own small buttons. This is what they do:</p>
+
+      <div class="doe">
+        <span class="wat"><span class="knop">▲</span><span class="knop">▼</span></span>
+        <span class="uitleg"><b>Move a whole day up or down.</b> Use these to put the days in
+        a better order. Tap <span class="knop">▲</span> once and that day swaps places with
+        the one above it; tap it again to move it further up. They turn pale at the top and
+        the bottom of the trip, because there is nowhere further to go.</span>
+      </div>
+
+      <div class="doe">
+        <span class="wat"><span class="knop">✕</span></span>
+        <span class="uitleg"><b>Take something out of a day</b> — an activity that will not
+        work, a lodge that is wrong.</span>
+      </div>
+
+      <div class="doe">
+        <span class="wat"><span class="knop">↩</span></span>
+        <span class="uitleg"><b>Put it back</b> if you removed it by mistake. Nothing is
+        lost.</span>
+      </div>
+
+      <p><b>The dates do not travel with the day.</b> Day 3 stays day 3 — what changes is
+      what happens on it. So if you move the Bwindi day up, Bwindi simply happens earlier.</p>
+
+      <p>Some days are tied to a fixed date, like a gorilla permit. You can still move them,
+      and your answer will carry a note so we check that one together.</p>
+
+      <p><b>After a change, write one line to say why.</b> That line matters as much as the
+      change itself: it tells us what to do differently on the next trip.</p>
+    </div>
+  </div>
+
+  <div class="stap">
+    <div class="nr">4</div>
+    <div class="tekst">
+      <h2>Add anything else</h2>
+      <p>At the bottom there is a box for everything that does not belong to one day: a road
+      to avoid, a lodge you heard good things about, a time that will not work.</p>
+    </div>
+  </div>
+
+  <div class="stap">
+    <div class="nr">5</div>
+    <div class="tekst">
+      <h2>Send it back</h2>
+      <p>One button at the bottom of the page. It opens WhatsApp with your answer already
+      written. <b>Press send, and you are done.</b></p>
+    </div>
+  </div>
+
+  <div class="rust">
+    <h2>Good to know</h2>
+    <ul>
+      <li><b>Nothing is sent until you press that button.</b> You can close the page and
+      start again whenever you want.</li>
+      <li>Your changes stay on your phone until you send them. We see nothing before that.</li>
+      <li>Once the page is open it <b>keeps working without internet</b>, so a weak signal
+      on the road is not a problem.</li>
+      <li>Each link stays open for about a month.</li>
+      <li>There are <b>no prices and no guest names</b> on the page. Only the route.</li>
+    </ul>
+  </div>
+
+  <p class="slot"><b>If anything goes wrong, just send us a WhatsApp message.</b> There is no
+  wrong way to answer, and you cannot break anything. Tell us in your own words and we will
+  sort it out.</p>
+
+  <footer>Roots &amp; Roads Africa</footer>
+
+</div>
+</body>
+</html>

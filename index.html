@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Route check</title>
+<!-- Wat WhatsApp toont bij de link: een kaartje met een titel in plaats van kale tekst.
+     Zonder dit is er alleen het lange adres en dan valt niet op dat het aantikbaar is. -->
+<meta property="og:title" content="Route check — Roots &amp; Roads Africa">
+<meta property="og:description" content="Tap to open the route and check the lodges, the activities and the order of the days.">
+<meta property="og:type" content="website">
+<meta name="description" content="Tap to open the route and check the lodges, the activities and the order of the days.">
+<!-- HET NAKIJKSCHERM VOOR DE CHAUFFEUR-GIDS.
+
+     Alles wat deze pagina toont zit in de link zelf, achter het hekje: plaatsen, lodges,
+     alternatieven en activiteiten, zonder prijzen en zonder klantnaam. Er wordt niets
+     geladen en niets bewaard; de pagina werkt offline zodra ze open staat.
+
+     DAAROM STAAT HIER BEWUST GEEN <script src="lodges.js">. Die lijst bevat tarieven en
+     is commercieel gevoelig. Deze pagina wordt ooit publiek gehost, dus ze moet het
+     stellen met wat het reisscherm in de link meegeeft: namen, geen cijfers.
+
+     De taal is Engels: de chauffeur-gids werkt in het Engels. De activiteitennamen komen
+     uit de reis zelf en kunnen dus Nederlands zijn; hij herkent ze aan de plaats. -->
+<style>
+  :root{
+    --ground:#F4ECDC; --surface:#FBF6EA; --surface-2:#EBDFC7;
+    --ink:#2A241C; --ink-soft:#5C5240; --ink-faint:#7A6E58;
+    --line:rgba(42,36,28,.18); --line-soft:rgba(42,36,28,.10);
+    --go:#4B5738; --go-ink:#3A4429; --go-ground:#F2F5EC;
+    --wait:#C98A1F; --wait-ink:#8A5D0C;
+    --clay:#C1512B; --clay-ink:#9C3F20; --clay-ground:#F9EDE6;
+    --chip-ground:rgba(42,36,28,.05);
+    --display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --body:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ground:#1B1811; --surface:#241F17; --surface-2:#2C2619;
+      --ink:#F1E8D6; --ink-soft:#B9AC93; --ink-faint:#8F836D;
+      --line:rgba(241,232,214,.16); --line-soft:rgba(241,232,214,.09);
+      --go:#93A76F; --go-ink:#A8BC84; --go-ground:#2A3021;
+      --wait:#E0A93F; --wait-ink:#EBBB5C;
+      --clay:#E0714A; --clay-ink:#EC8B67; --clay-ground:#33231B;
+      --chip-ground:rgba(241,232,214,.07);
+    }
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;
+    line-height:1.5;margin:0;padding:18px 14px 110px;}
+  .wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+  p{margin:0;}
+  button{font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface);
+    border:1.5px solid var(--line);border-radius:3px;cursor:pointer;}
+  input[type=text]{font-family:inherit;font-size:16px;color:var(--ink);background:var(--surface);
+    border:1.5px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;}
+  input:focus,button:focus-visible{outline:2px solid var(--go);outline-offset:1px;}
+
+  header h1{font-family:var(--display);font-size:26px;line-height:1.1;font-weight:600;
+    margin:0 0 4px;letter-spacing:-.01em;}
+  .sub{color:var(--ink-soft);font-size:14.5px;}
+  .uitleg{background:var(--surface-2);border-radius:3px;padding:12px 14px;font-size:14.5px;
+    color:var(--ink-soft);}
+  /* De handleiding staat naast deze pagina in de publieke map. Absolute link, want lokaal
+     in werkdocument/ staat help.html niet — zo werkt hij vanuit allebei. */
+  .uitleg a{color:var(--clay-ink);text-decoration:none;border-bottom:1px solid var(--clay);
+    white-space:nowrap;}
+
+  /* one card per day */
+  .dag{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+    padding:14px;display:flex;flex-direction:column;gap:10px;}
+  .dag.anders{border-color:var(--clay);}
+  .dagkop{display:flex;align-items:flex-start;gap:8px;}
+  .dagkop .titel{flex:1 1 auto;min-width:0;}
+  .dagnr{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);
+    font-weight:700;}
+  .plaats{font-family:var(--display);font-size:19px;font-weight:600;line-height:1.15;}
+  .datum{font-size:13.5px;color:var(--ink-soft);}
+  .vast{font-size:13px;color:var(--wait-ink);font-weight:600;}
+
+  .pijlen{display:flex;gap:6px;flex:0 0 auto;}
+  .pijlen button{width:44px;height:44px;font-size:18px;line-height:1;padding:0;}
+  .pijlen button:disabled{opacity:.35;cursor:default;}
+
+  .rij{display:flex;align-items:baseline;gap:10px;}
+  .rol{flex:0 0 52px;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:700;}
+  .rij .inhoud{flex:1 1 auto;min-width:0;}
+  .gewijzigd{color:var(--clay-ink);font-weight:600;}
+  .oud{text-decoration:line-through;color:var(--ink-faint);font-weight:400;}
+  .klein{background:none;border:none;color:var(--go-ink);font-weight:700;font-size:14px;
+    padding:6px 4px;text-decoration:underline;text-underline-offset:3px;}
+
+  /* pick lists open inside the card */
+  .kieslijst{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);
+    padding-top:10px;}
+  .kieslijst button{text-align:left;padding:11px 12px;font-size:15px;}
+  .kieslijst button.nu{border-color:var(--clay);color:var(--clay-ink);font-weight:700;
+    background:var(--clay-ground);}
+  .kieslijst .hint{font-size:13px;color:var(--ink-faint);}
+
+  .planregel{display:flex;align-items:center;gap:8px;padding:3px 0;}
+  .planregel .tekst{flex:1 1 auto;}
+  .planregel .weg{text-decoration:line-through;color:var(--ink-faint);}
+  .planregel button{width:40px;height:40px;padding:0;font-size:16px;flex:0 0 auto;}
+  .moment{font-size:12.5px;color:var(--ink-faint);text-transform:none;margin-right:4px;}
+  .bij{color:var(--go-ink);font-weight:600;}
+
+  /* the why, only when something on this day changed */
+  .waarom{border-top:1px dashed var(--line);padding-top:10px;display:flex;
+    flex-direction:column;gap:8px;}
+  .waarom .vraag{font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:700;}
+  /* a change without a reason blocks sending; the block that still owes one speaks up */
+  .waarom.moet{border-top-color:var(--clay);}
+  .waarom.moet .vraag{color:var(--clay-ink);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chips button{padding:9px 12px;font-size:14px;border-radius:16px;background:var(--chip-ground);
+    border-color:transparent;}
+  .chips button.aan{background:var(--clay-ground);border-color:var(--clay);
+    color:var(--clay-ink);font-weight:700;}
+
+  .nota{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+    padding:14px;display:flex;flex-direction:column;gap:8px;}
+  .nota .vraag{font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:700;}
+  textarea{font-family:inherit;font-size:16px;color:var(--ink);background:var(--surface);
+    border:1.5px solid var(--line);border-radius:3px;padding:10px 12px;width:100%;
+    min-height:70px;resize:vertical;}
+
+  /* sticky send bar */
+  .balk{position:fixed;left:0;right:0;bottom:0;background:var(--surface);
+    border-top:1px solid var(--line);padding:12px 14px calc(12px + env(safe-area-inset-bottom));}
+  .balk .binnen{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
+  .balk button{flex:1 1 50%;padding:14px 10px;font-size:16px;font-weight:700;}
+  .balk .goed{background:var(--go-ground);border-color:var(--go);color:var(--go-ink);}
+  .balk .stuur{background:var(--go);border-color:var(--go);color:#FBF6EA;}
+  .balk .stuur:disabled{opacity:.4;cursor:default;}
+  .telt{font-size:13px;color:var(--ink-soft);text-align:center;margin-top:6px;}
+
+  .leegmelding{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+    padding:20px;font-size:15px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- read the trip out of the link ---------- */
+
+  function bytesVan(b64) {
+    return Uint8Array.from(atob(b64.replace(/-/g, '+').replace(/_/g, '/')),
+      function (c) { return c.charCodeAt(0); });
+  }
+
+  /* Een reis waarin elke naam één keer voorkomt en verder als cijfer, weer uitgeschreven.
+     Zo blijft de link kort genoeg om in WhatsApp nog als link te herkennen. */
+  function uitWoordenboek(a) {
+    var woorden = a[2] || [];
+    var naam = function (i) { return i == null ? null : woorden[i]; };
+    return {
+      code: a[0], start: a[1],
+      days: (a[3] || []).map(function (d) {
+        return {
+          place: naam(d[0]) || '', lodge: naam(d[1]),
+          alts: (d[2] || []).map(naam),
+          plan: (d[3] || []).map(function (p) { return { m: naam(p[0]) || '', t: naam(p[1]) || '' }; }),
+          acts: (d[4] || []).map(naam),
+          fixed: naam(d[5])
+        };
+      })
+    };
+  }
+
+  /* Waarom het misging, wanneer er geen reis uit de link komt. Het verschil is het halve
+     antwoord: een adres zonder staartje is een andere fout dan een reis die er nog niet
+     staat, en de chauffeur moet kunnen zeggen wat hij ziet. */
+  var euvel = '', ontvangen = 0;
+
+  /* Vier vormen, want een link die al verstuurd is moet blijven werken:
+       k7m2p9  een codewoord: de reis staat als bestandje naast deze pagina. Dit is de
+               gewone vorm, en kort genoeg dat WhatsApp de link niet dichtklapt
+       2...    de hele reis in de link, ingepakt
+       1...    dezelfde, onverpakt
+       ey...   de eerste vorm, gewone JSON */
+  function lees() {
+    var h = location.hash.replace(/^#/, '');
+    if (!h) { euvel = 'leeg'; return Promise.resolve(null); }
+    ontvangen = h.length;
+    euvel = 'stuk';
+
+    if (/^[a-z2-9]{6}$/.test(h)) {
+      return fetch('r/' + h + '.json', { cache: 'no-store' }).then(function (a) {
+        if (a.status === 404) { euvel = 'nognietklaar'; return null; }
+        if (!a.ok) throw new Error(a.status);
+        return a.json();
+      }).then(function (d) { return d ? uitWoordenboek(d) : null; })
+        .catch(function () { euvel = 'geenverbinding'; return null; });
+    }
+    var soort = (h[0] === '1' || h[0] === '2') ? h[0] : '0';
+    var rest = soort === '0' ? h : h.slice(1);
+    var uit;
+    try {
+      var bytes = bytesVan(rest);
+      if (soort === '2') {
+        uit = new Response(new Blob([bytes]).stream()
+          .pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()
+          .then(function (ab) { return new Uint8Array(ab); });
+      } else {
+        uit = Promise.resolve(bytes);
+      }
+    } catch (e) { return Promise.resolve(null); }
+    return uit.then(function (b) {
+      var data = JSON.parse(new TextDecoder().decode(b));
+      var t = soort === '0' ? data : uitWoordenboek(data);
+      return (t && t.days && t.days.length) ? t : null;
+    }).catch(function () { return null; });
+  }
+
+  var trip = null;
+
+  /* Working copy. Each day remembers where it came from (orig), what the office chose
+     (lodge0) and what the guide changed. Nothing is stored anywhere: close the page and
+     it starts clean, which is exactly right for a check. */
+  var dagen = [];
+  function werkkopie() {
+    dagen = trip ? trip.days.map(function (d, i) {
+      return {
+        orig: i,
+        place: d.place || '', fixed: d.fixed || null,
+        lodge0: d.lodge || null, lodge: d.lodge || null, eigenLodge: false,
+        alts: (d.alts || []).filter(function (x) { return x; }),
+        plan: (d.plan || []).map(function (p) {
+          return { m: p.m || '', t: p.t || '', weg: false };
+        }),
+        acts: (d.acts || []).filter(function (x) { return x; }), extra: [],
+        redenen: [], redenTekst: '',
+        openKies: null   /* 'lodge' | 'act' | null */
+      };
+    }) : [];
+  }
+  var nota = '';
+  var redenPlicht = false;   /* true after a send attempt while a reason is still missing */
+
+  var REDENEN = ['fully booked', 'construction works', 'bad reviews', 'better lodge nearby'];
+
+  /* ---------- what changed ---------- */
+
+  function dagAnders(d, i) {
+    return d.lodge !== d.lodge0 ||
+      d.plan.some(function (p) { return p.weg; }) ||
+      d.extra.length > 0 || d.orig !== i;
+  }
+  function volgordeAnders() {
+    return dagen.some(function (d, i) { return d.orig !== i; });
+  }
+
+  /* ---------- every change needs its why ----------
+
+     The office always wants the reason, so sending is held back until each changed day
+     has one: a tapped chip or a typed line, either is fine. A day that only moved counts
+     as explained as soon as any moved day carries a reason — swapping two days is one
+     decision, not two. */
+  function heeftReden(d) {
+    return d.redenen.length > 0 || d.redenTekst.trim() !== '';
+  }
+  function inhoudAnders(d) {
+    return d.lodge !== d.lodge0 ||
+      d.plan.some(function (p) { return p.weg; }) || d.extra.length > 0;
+  }
+  function redenOntbreekt() {
+    var mist = [];
+    dagen.forEach(function (d, i) { if (inhoudAnders(d) && !heeftReden(d)) mist.push(i); });
+    if (volgordeAnders() &&
+        !dagen.some(function (d, i) { return d.orig !== i && heeftReden(d); })) {
+      dagen.forEach(function (d, i) {
+        if (d.orig !== i && !inhoudAnders(d) && mist.indexOf(i) < 0) mist.push(i);
+      });
+    }
+    return mist.sort(function (a, b) { return a - b; });
+  }
+  function aantalAnders() {
+    var n = 0;
+    dagen.forEach(function (d, i) {
+      if (d.lodge !== d.lodge0) n++;
+      n += d.plan.filter(function (p) { return p.weg; }).length;
+      n += d.extra.length;
+    });
+    if (volgordeAnders()) n++;
+    return n;
+  }
+
+  /* ---------- dates: the slot keeps its date, the content moves ---------- */
+
+  function datumVan(i) {
+    if (!trip.start) return '';
+    var d = new Date(trip.start + 'T12:00:00');
+    if (isNaN(d)) return '';
+    d.setDate(d.getDate() + i);
+    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* ---------- the message that goes back ---------- */
+
+  function bericht() {
+    var r = ['Route check ' + (trip.code || '') + ' — ' + dagen.length + ' days'];
+    dagen.forEach(function (d, i) {
+      var kop = 'Day ' + (i + 1) + (d.place ? ' (' + d.place + ')' : '');
+      var delen = [];
+      if (d.lodge !== d.lodge0) {
+        delen.push('lodge ' + (d.lodge0 || 'none') + ' → ' + d.lodge +
+          (d.eigenLodge ? ' (not in your list — no rates yet)' : ''));
+      }
+      d.plan.forEach(function (p) { if (p.weg) delen.push('removed "' + p.t + '"'); });
+      d.extra.forEach(function (t) { delen.push('added "' + t + '"'); });
+      var reden = d.redenen.slice();
+      if (d.redenTekst.trim()) reden.push(d.redenTekst.trim());
+      if (delen.length) {
+        r.push(kop + ': ' + delen.join('; ') +
+          (reden.length ? ' — ' + reden.join('; ') : ''));
+      } else if (d.orig !== i && reden.length) {
+        r.push(kop + ' moved — ' + reden.join('; '));
+      }
+    });
+    if (volgordeAnders()) {
+      r.push('New day order: ' + dagen.map(function (d) { return d.orig + 1; }).join(', '));
+      dagen.forEach(function (d, i) {
+        if (d.orig !== i && d.fixed) {
+          r.push('⚠ The day with ' + d.fixed + ' moved — that one is tied to a date, please check.');
+        }
+      });
+    }
+    if (nota.trim()) r.push('Note: ' + nota.trim());
+    if (r.length === 1) r.push('All good — nothing to change.');
+    return r.join('\n');
+  }
+
+  /* De terugweg, zonder telefoonnummer in de pagina (01-09-2026).
+
+     Tot vandaag stond hier het gsm-nummer van het kantoor in een wa.me-link. Deze pagina
+     staat op GitHub Pages en die repo is openbaar, dus dat nummer stond publiek in de bron.
+     Weglaten kon niet zomaar: de vorm zonder nummer (wa.me/?text=) opende op veel telefoons
+     een foutpagina, en dat is op 25-08-2026 al eens geprobeerd.
+
+     Wat er nu gebeurt: de tekst gaat naar het klembord en de chauffeur plakt hem in het
+     gesprek dat hij toch al met het kantoor heeft. Eén tik extra voor hem, geen nummer in
+     de pagina. Lukt kopiëren niet, dan staat de tekst leesbaar in beeld om zelf te
+     selecteren, en er is een mailknop naar het kantooradres als tweede weg. */
+  function stuur(tekst) {
+    var gelukt = false;
+    try {
+      var vak = document.createElement('textarea');
+      vak.value = tekst;
+      vak.style.cssText = 'position:fixed;top:-1000px;left:0;opacity:0;';
+      document.body.appendChild(vak);
+      vak.select();
+      gelukt = document.execCommand('copy');
+      document.body.removeChild(vak);
+    } catch (e) { gelukt = false; }
+
+    var doel = document.getElementById('terugweg');
+    if (!doel) {
+      doel = document.createElement('div');
+      doel.id = 'terugweg';
+      doel.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;' +
+        'background:#2A241C;color:#F4ECDC;padding:14px 16px;font-size:15px;line-height:1.5;' +
+        'box-shadow:0 -4px 16px rgba(0,0,0,.35);max-height:70vh;overflow:auto;';
+      document.body.appendChild(doel);
+    }
+    doel.innerHTML =
+      (gelukt
+        ? '<b>Copied.</b> Open WhatsApp and paste this in your chat with the office.'
+        : '<b>Copy the text below</b> and send it to the office on WhatsApp.') +
+      ' <a href="mailto:info@rootsandroadsafrica.com?subject=' +
+        encodeURIComponent('Route check') + '&body=' + encodeURIComponent(tekst) +
+        '" style="color:#E8C98A;">or send it by email</a>' +
+      '<textarea readonly rows="6" style="width:100%;margin-top:8px;font:inherit;' +
+        'font-size:13px;background:#3A342A;color:#F4ECDC;border:0;border-radius:3px;' +
+        'padding:8px;">' + tekst.replace(/[<>&]/g, '') + '</textarea>';
+  }
+
+  /* ---------- drawing ---------- */
+
+  var app = document.getElementById('app');
+
+  function teken() {
+    if (!trip) {
+      var uitleg = {
+        leeg: '<b>This link has no route in it.</b><br>The address stops at <i>/routecheck/</i>. ' +
+          'A complete link carries a short code after a # sign. Please ask the office to ' +
+          'send it again, and open it from the message rather than typing it.',
+        nognietklaar: '<b>This route is not ready yet.</b><br>It can take a minute after the ' +
+          'office sends it. Please wait a moment and open the link again.',
+        geenverbinding: '<b>Could not load the route.</b><br>Check your internet connection ' +
+          'and open the link again.',
+        stuk: '<b>This link looks incomplete.</b><br>It may have been cut off on the way. ' +
+          'Please ask the office to send it again.' +
+          '<br><br><small>Received ' + ontvangen + ' characters after the # sign.</small>'
+      };
+      app.innerHTML = '<div class="leegmelding">' + (uitleg[euvel] || uitleg.stuk) + '</div>';
+      return;
+    }
+    var h = '<header><h1>Route check</h1><p class="sub">' +
+      esc(trip.code || '') + ' · ' + dagen.length + ' days' +
+      (trip.start ? ' · starts ' + esc(datumVan(0)) : '') + '</p></header>' +
+      '<div class="uitleg">Have a look at the route below. Change what is wrong — ' +
+      'lodges, activities, the order of the days — and tell us why in one line. ' +
+      'Then hit one button at the bottom and it all comes back to us on WhatsApp. ' +
+      '<a href="https://wimvandyck11-cyber.github.io/routecheck/help.html">First time? ' +
+      'See how it works</a></div>';
+
+    dagen.forEach(function (d, i) { h += dagKaart(d, i); });
+
+    h += '<div class="nota"><p class="vraag">Anything else we should know?</p>' +
+      '<textarea id="nota" placeholder="A lodge you heard good things about, a road to avoid, anything.">' +
+      esc(nota) + '</textarea></div>';
+
+    var n = aantalAnders();
+    h += '<div class="balk"><div class="binnen">' +
+      '<button class="goed" data-doe="goed">✓ All good</button>' +
+      '<button class="stuur" data-doe="stuur"' + (n || nota.trim() ? '' : ' disabled') +
+      '>Send changes</button></div>' +
+      '<p class="telt">' + (n
+        ? n + ' change' + (n > 1 ? 's' : '') + ' so far' +
+          (redenPlicht && redenOntbreekt().length
+            ? ' — please tell us why at the marked day' : '')
+        : 'No changes yet — if the route is fine, tap All good') + '</p></div>';
+
+    app.innerHTML = h;
+    var no = document.getElementById('nota');
+    if (no) no.addEventListener('input', function () { nota = no.value; verversBalk(); });
+  }
+
+  /* Only the bar needs redrawing while he types a note; a full redraw would throw
+     the keyboard off the textarea. */
+  function verversBalk() {
+    var knop = document.querySelector('.balk .stuur');
+    if (knop) knop.disabled = !(aantalAnders() || nota.trim());
+  }
+
+  function dagKaart(d, i) {
+    var anders = dagAnders(d, i);
+    var h = '<section class="dag' + (anders ? ' anders' : '') + '" data-dag="' + i + '">';
+
+    h += '<div class="dagkop"><div class="titel">' +
+      '<p class="dagnr">Day ' + (i + 1) + (trip.start ? ' · ' + esc(datumVan(i)) : '') + '</p>' +
+      '<p class="plaats">' + esc(d.place || 'On the road') + '</p>' +
+      (d.fixed ? '<p class="vast">📌 ' + esc(d.fixed) + ' — tied to this date</p>' : '') +
+      '</div><div class="pijlen">' +
+      '<button data-doe="op" aria-label="Move this day up"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+      '<button data-doe="neer" aria-label="Move this day down"' + (i === dagen.length - 1 ? ' disabled' : '') + '>▼</button>' +
+      '</div></div>';
+
+    /* stay */
+    h += '<div class="rij"><span class="rol">Stay</span><div class="inhoud">';
+    if (d.lodge !== d.lodge0) {
+      h += '<span class="gewijzigd">' + esc(d.lodge) + '</span> ' +
+        '<span class="oud">' + esc(d.lodge0 || '') + '</span>';
+    } else {
+      h += esc(d.lodge || 'no lodge yet');
+    }
+    if (d.alts.length || d.lodge0) {
+      h += ' <button class="klein" data-doe="kies-lodge">' +
+        (d.openKies === 'lodge' ? 'close' : 'change') + '</button>';
+    }
+    h += '</div></div>';
+
+    if (d.openKies === 'lodge') {
+      h += '<div class="kieslijst">';
+      var namen = [];
+      if (d.lodge0) namen.push(d.lodge0);
+      d.alts.forEach(function (a) { if (namen.indexOf(a) < 0) namen.push(a); });
+      namen.forEach(function (naam) {
+        h += '<button data-doe="lodge" data-naam="' + esc(naam) + '"' +
+          (naam === d.lodge ? ' class="nu"' : '') + '>' + esc(naam) +
+          (naam === d.lodge0 ? ' · current' : '') + '</button>';
+      });
+      h += '<input type="text" data-doe="eigen-lodge" placeholder="Another lodge — type the name, then Enter">' +
+        '<p class="hint">A lodge we do not list yet is welcome — we will ask for rates.</p></div>';
+    }
+
+    /* plan */
+    h += '<div class="rij"><span class="rol">Plan</span><div class="inhoud">';
+    if (!d.plan.length && !d.extra.length) h += '<span class="moment">free day</span>';
+    d.plan.forEach(function (p, pi) {
+      h += '<div class="planregel"><span class="tekst' + (p.weg ? ' weg' : '') + '">' +
+        (p.m ? '<span class="moment">' + esc(p.m) + '</span>' : '') + esc(p.t) + '</span>' +
+        '<button data-doe="plan" data-pi="' + pi + '" aria-label="' +
+        (p.weg ? 'Put this back' : 'Remove this') + '">' + (p.weg ? '↩' : '✕') + '</button></div>';
+    });
+    d.extra.forEach(function (t, xi) {
+      h += '<div class="planregel"><span class="tekst bij">+ ' + esc(t) + '</span>' +
+        '<button data-doe="extra-weg" data-xi="' + xi + '" aria-label="Remove this again">✕</button></div>';
+    });
+    h += '<button class="klein" data-doe="kies-act">' +
+      (d.openKies === 'act' ? 'close' : '+ add activity') + '</button>';
+    h += '</div></div>';
+
+    if (d.openKies === 'act') {
+      h += '<div class="kieslijst">';
+      var al = d.plan.filter(function (p) { return !p.weg; }).map(function (p) { return p.t; })
+        .concat(d.extra);
+      d.acts.forEach(function (a) {
+        if (al.indexOf(a) < 0) h += '<button data-doe="act" data-naam="' + esc(a) + '">' + esc(a) + '</button>';
+      });
+      h += '<input type="text" data-doe="eigen-act" placeholder="Something else — type it, then Enter"></div>';
+    }
+
+    /* the why, only once something changed */
+    if (anders) {
+      var moet = redenPlicht && !heeftReden(d) &&
+        (inhoudAnders(d) || redenOntbreekt().indexOf(i) >= 0);
+      h += '<div class="waarom' + (moet ? ' moet' : '') + '"><p class="vraag">' +
+        (moet ? 'Why? We need the reason before this can be sent'
+              : 'Why? One tap or one line is enough') + '</p><div class="chips">';
+      REDENEN.forEach(function (r) {
+        h += '<button data-doe="reden" data-r="' + esc(r) + '"' +
+          (d.redenen.indexOf(r) >= 0 ? ' class="aan"' : '') + '>' + esc(r) + '</button>';
+      });
+      h += '</div><input type="text" data-doe="reden-tekst" placeholder="Or type your own reason" value="' +
+        esc(d.redenTekst) + '"></div>';
+    }
+
+    return h + '</section>';
+  }
+
+  /* ---------- events, one listener for the whole page ---------- */
+
+  app.addEventListener('click', function (e) {
+    var knop = e.target.closest('button');
+    if (!knop) return;
+    var doe = knop.getAttribute('data-doe');
+    if (!doe) return;
+
+    if (doe === 'goed') { stuur('Route check ' + (trip.code || '') + ' — all good, nothing to change.' + (nota.trim() ? '\nNote: ' + nota.trim() : '')); return; }
+    if (doe === 'stuur') {
+      if (redenOntbreekt().length) {
+        redenPlicht = true;
+        teken();
+        var eerste = document.querySelector('.waarom.moet');
+        if (eerste) eerste.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      stuur(bericht()); return;
+    }
+
+    var kaart = knop.closest('.dag');
+    if (!kaart) return;
+    var i = Number(kaart.getAttribute('data-dag'));
+    var d = dagen[i];
+
+    if (doe === 'op' && i > 0) { dagen[i] = dagen[i - 1]; dagen[i - 1] = d; }
+    if (doe === 'neer' && i < dagen.length - 1) { dagen[i] = dagen[i + 1]; dagen[i + 1] = d; }
+    if (doe === 'kies-lodge') d.openKies = d.openKies === 'lodge' ? null : 'lodge';
+    if (doe === 'kies-act') d.openKies = d.openKies === 'act' ? null : 'act';
+    if (doe === 'lodge') {
+      d.lodge = knop.getAttribute('data-naam');
+      d.eigenLodge = false; d.openKies = null;
+    }
+    if (doe === 'act') { d.extra.push(knop.getAttribute('data-naam')); d.openKies = null; }
+    if (doe === 'plan') d.plan[Number(knop.getAttribute('data-pi'))].weg ^= true;
+    if (doe === 'extra-weg') d.extra.splice(Number(knop.getAttribute('data-xi')), 1);
+    if (doe === 'reden') {
+      var r = knop.getAttribute('data-r'), p = d.redenen.indexOf(r);
+      if (p >= 0) d.redenen.splice(p, 1); else d.redenen.push(r);
+    }
+    teken();
+  });
+
+  /* free-typed lodge or activity: Enter confirms */
+  app.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var el = e.target;
+    var doe = el.getAttribute && el.getAttribute('data-doe');
+    if (doe !== 'eigen-lodge' && doe !== 'eigen-act') return;
+    e.preventDefault();
+    var kaart = el.closest('.dag');
+    var d = dagen[Number(kaart.getAttribute('data-dag'))];
+    var t = el.value.trim();
+    if (!t) return;
+    if (doe === 'eigen-lodge') { d.lodge = t; d.eigenLodge = true; }
+    else d.extra.push(t);
+    d.openKies = null;
+    teken();
+  });
+
+  /* the one-line reason: keep while typing, no redraw needed */
+  app.addEventListener('input', function (e) {
+    var el = e.target;
+    if (el.getAttribute && el.getAttribute('data-doe') === 'reden-tekst') {
+      var kaart = el.closest('.dag');
+      dagen[Number(kaart.getAttribute('data-dag'))].redenTekst = el.value;
+    }
+  });
+
+  /* Uitpakken gaat met een belofte, dus het scherm wordt pas getekend wanneer de reis er is. */
+  lees().then(function (t) { trip = t; werkkopie(); teken(); });
+})();
+</script>
+</body>
+</html>
