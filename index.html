@@ -399,8 +399,16 @@
         leeg: '<b>This link has no route in it.</b><br>The address stops at <i>/routecheck/</i>. ' +
           'A complete link carries a short code after a # sign. Please ask the office to ' +
           'send it again, and open it from the message rather than typing it.',
-        nognietklaar: '<b>This route is not ready yet.</b><br>It can take a minute after the ' +
-          'office sends it. Please wait a moment and open the link again.',
+        /* Een 404 op het reisbestand heeft twee oorzaken die de pagina niet uit elkaar kan
+           houden: de publicatie is nog niet online (dat duurt tot een minuut), of de reis
+           bestaat niet meer. Tot 03-09-2026 stond hier alleen het eerste geval, met "wait a
+           moment and open the link again". Die avond zijn twaalf oude reizen van de publieke
+           map gehaald, en sindsdien stuurt die tekst de gids een wachtlus in die nooit
+           eindigt. Nu dekt hij allebei, met de handeling erbij voor het tweede geval. */
+        nognietklaar: '<b>This route is not available.</b><br>If the office has just sent it, ' +
+          'it can take up to a minute to come online: please wait and open the link again. ' +
+          'If this is an older link, the route has been replaced. Please ask the office to ' +
+          'send you the new one.',
         geenverbinding: '<b>Could not load the route.</b><br>Check your internet connection ' +
           'and open the link again.',
         stuk: '<b>This link looks incomplete.</b><br>It may have been cut off on the way. ' +
