@@ -6,7 +6,7 @@
 <title>Route check</title>
 <!-- Wat WhatsApp toont bij de link: een kaartje met een titel in plaats van kale tekst.
      Zonder dit is er alleen het lange adres en dan valt niet op dat het aantikbaar is. -->
-<meta property="og:title" content="Route check — Roots &amp; Roads Africa">
+<meta property="og:title" content="Route check, Roots &amp; Roads Africa">
 <meta property="og:description" content="Tap to open the route and check the lodges, the activities and the order of the days.">
 <meta property="og:type" content="website">
 <meta name="description" content="Tap to open the route and check the lodges, the activities and the order of the days.">
@@ -63,7 +63,7 @@
   .uitleg{background:var(--surface-2);border-radius:3px;padding:12px 14px;font-size:14.5px;
     color:var(--ink-soft);}
   /* De handleiding staat naast deze pagina in de publieke map. Absolute link, want lokaal
-     in werkdocument/ staat help.html niet — zo werkt hij vanuit allebei. */
+     in werkdocument/ staat help.html niet, en zo werkt hij vanuit allebei. */
   .uitleg a{color:var(--clay-ink);text-decoration:none;border-bottom:1px solid var(--clay);
     white-space:nowrap;}
 
@@ -263,7 +263,7 @@
 
      The office always wants the reason, so sending is held back until each changed day
      has one: a tapped chip or a typed line, either is fine. A day that only moved counts
-     as explained as soon as any moved day carries a reason — swapping two days is one
+     as explained as soon as any moved day carries a reason, because swapping two days is one
      decision, not two. */
   function heeftReden(d) {
     return d.redenen.length > 0 || d.redenTekst.trim() !== '';
@@ -313,13 +313,13 @@
   /* ---------- the message that goes back ---------- */
 
   function bericht() {
-    var r = ['Route check ' + (trip.code || '') + ' — ' + dagen.length + ' days'];
+    var r = ['Route check ' + (trip.code || '') + ', ' + dagen.length + ' days'];
     dagen.forEach(function (d, i) {
       var kop = 'Day ' + (i + 1) + (d.place ? ' (' + d.place + ')' : '');
       var delen = [];
       if (d.lodge !== d.lodge0) {
         delen.push('lodge ' + (d.lodge0 || 'none') + ' → ' + d.lodge +
-          (d.eigenLodge ? ' (not in your list — no rates yet)' : ''));
+          (d.eigenLodge ? ' (not in your list, no rates yet)' : ''));
       }
       d.plan.forEach(function (p) { if (p.weg) delen.push('removed "' + p.t + '"'); });
       d.extra.forEach(function (t) { delen.push('added "' + t + '"'); });
@@ -327,21 +327,21 @@
       if (d.redenTekst.trim()) reden.push(d.redenTekst.trim());
       if (delen.length) {
         r.push(kop + ': ' + delen.join('; ') +
-          (reden.length ? ' — ' + reden.join('; ') : ''));
+          (reden.length ? ': ' + reden.join('; ') : ''));
       } else if (d.orig !== i && reden.length) {
-        r.push(kop + ' moved — ' + reden.join('; '));
+        r.push(kop + ' moved: ' + reden.join('; '));
       }
     });
     if (volgordeAnders()) {
       r.push('New day order: ' + dagen.map(function (d) { return d.orig + 1; }).join(', '));
       dagen.forEach(function (d, i) {
         if (d.orig !== i && d.fixed) {
-          r.push('⚠ The day with ' + d.fixed + ' moved — that one is tied to a date, please check.');
+          r.push('⚠ The day with ' + d.fixed + ' moved. That one is tied to a date, please check.');
         }
       });
     }
     if (nota.trim()) r.push('Note: ' + nota.trim());
-    if (r.length === 1) r.push('All good — nothing to change.');
+    if (r.length === 1) r.push('All good, nothing to change.');
     return r.join('\n');
   }
 
@@ -381,6 +381,11 @@
       (gelukt
         ? '<b>Copied.</b> Open WhatsApp and paste this in your chat with the office.'
         : '<b>Copy the text below</b> and send it to the office on WhatsApp.') +
+      /* DEZE MAILTO BLIJFT (aangetekend 10-09-2026). Hij gaat naar ons eigen adres en niet
+         naar een leverancier: het is de weg waarlangs de chauffeur-gids ons bereikt als
+         WhatsApp niet lukt. Deze pagina staat publiek online en hij heeft geen backoffice,
+         dus er is geen andere weg. De regel van vandaag, geen mailto naar een leverancier,
+         raakt hem niet. */
       ' <a href="mailto:info@rootsandroadsafrica.com?subject=' +
         encodeURIComponent('Route check') + '&body=' + encodeURIComponent(tekst) +
         '" style="color:#E8C98A;">or send it by email</a>' +
@@ -421,8 +426,8 @@
     var h = '<header><h1>Route check</h1><p class="sub">' +
       esc(trip.code || '') + ' · ' + dagen.length + ' days' +
       (trip.start ? ' · starts ' + esc(datumVan(0)) : '') + '</p></header>' +
-      '<div class="uitleg">Have a look at the route below. Change what is wrong — ' +
-      'lodges, activities, the order of the days — and tell us why in one line. ' +
+      '<div class="uitleg">Have a look at the route below. Change what is wrong: ' +
+      'lodges, activities, or the order of the days. Then tell us why in one line. ' +
       'Then hit one button at the bottom and it all comes back to us on WhatsApp. ' +
       '<a href="https://wimvandyck11-cyber.github.io/routecheck/help.html">First time? ' +
       'See how it works</a></div>';
@@ -441,8 +446,8 @@
       '<p class="telt">' + (n
         ? n + ' change' + (n > 1 ? 's' : '') + ' so far' +
           (redenPlicht && redenOntbreekt().length
-            ? ' — please tell us why at the marked day' : '')
-        : 'No changes yet — if the route is fine, tap All good') + '</p></div>';
+            ? '. Please tell us why at the marked day' : '')
+        : 'No changes yet. If the route is fine, tap All good') + '</p></div>';
 
     app.innerHTML = h;
     var no = document.getElementById('nota');
@@ -463,7 +468,7 @@
     h += '<div class="dagkop"><div class="titel">' +
       '<p class="dagnr">Day ' + (i + 1) + (trip.start ? ' · ' + esc(datumVan(i)) : '') + '</p>' +
       '<p class="plaats">' + esc(d.place || 'On the road') + '</p>' +
-      (d.fixed ? '<p class="vast">📌 ' + esc(d.fixed) + ' — tied to this date</p>' : '') +
+      (d.fixed ? '<p class="vast">📌 ' + esc(d.fixed) + ', tied to this date</p>' : '') +
       '</div><div class="pijlen">' +
       '<button data-doe="op" aria-label="Move this day up"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
       '<button data-doe="neer" aria-label="Move this day down"' + (i === dagen.length - 1 ? ' disabled' : '') + '>▼</button>' +
@@ -493,8 +498,8 @@
           (naam === d.lodge ? ' class="nu"' : '') + '>' + esc(naam) +
           (naam === d.lodge0 ? ' · current' : '') + '</button>';
       });
-      h += '<input type="text" data-doe="eigen-lodge" placeholder="Another lodge — type the name, then Enter">' +
-        '<p class="hint">A lodge we do not list yet is welcome — we will ask for rates.</p></div>';
+      h += '<input type="text" data-doe="eigen-lodge" placeholder="Another lodge: type the name, then Enter">' +
+        '<p class="hint">A lodge we do not list yet is welcome. We will ask for rates.</p></div>';
     }
 
     /* plan */
@@ -521,7 +526,7 @@
       d.acts.forEach(function (a) {
         if (al.indexOf(a) < 0) h += '<button data-doe="act" data-naam="' + esc(a) + '">' + esc(a) + '</button>';
       });
-      h += '<input type="text" data-doe="eigen-act" placeholder="Something else — type it, then Enter"></div>';
+      h += '<input type="text" data-doe="eigen-act" placeholder="Something else: type it, then Enter"></div>';
     }
 
     /* the why, only once something changed */
@@ -550,7 +555,7 @@
     var doe = knop.getAttribute('data-doe');
     if (!doe) return;
 
-    if (doe === 'goed') { stuur('Route check ' + (trip.code || '') + ' — all good, nothing to change.' + (nota.trim() ? '\nNote: ' + nota.trim() : '')); return; }
+    if (doe === 'goed') { stuur('Route check ' + (trip.code || '') + ', all good, nothing to change.' + (nota.trim() ? '\nNote: ' + nota.trim() : '')); return; }
     if (doe === 'stuur') {
       if (redenOntbreekt().length) {
         redenPlicht = true;
